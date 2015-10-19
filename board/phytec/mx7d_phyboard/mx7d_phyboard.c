@@ -94,20 +94,6 @@ struct i2c_pads_info i2c_pad_info1 = {
 		.gp = IMX_GPIO_NR(4, 9),
 	},
 };
-
-/* I2C3 */
-struct i2c_pads_info i2c_pad_info3 = {
-	.scl = {
-		.i2c_mode = MX7D_PAD_I2C3_SCL__I2C3_SCL | PC,
-		.gpio_mode = MX7D_PAD_I2C3_SCL__GPIO4_IO12 | PC,
-		.gp = IMX_GPIO_NR(4, 12),
-	},
-	.sda = {
-		.i2c_mode = MX7D_PAD_I2C3_SDA__I2C3_SDA | PC,
-		.gpio_mode = MX7D_PAD_I2C3_SDA__GPIO4_IO13 | PC,
-		.gp = IMX_GPIO_NR(4, 13),
-	},
-};
 #endif
 
 int dram_init(void)
@@ -120,6 +106,13 @@ int dram_init(void)
 static iomux_v3_cfg_t const uart1_pads[] = {
 	MX7D_PAD_UART1_TX_DATA__UART1_DCE_TX | MUX_PAD_CTRL(UART_PAD_CTRL),
 	MX7D_PAD_UART1_RX_DATA__UART1_DCE_RX | MUX_PAD_CTRL(UART_PAD_CTRL),
+};
+
+static iomux_v3_cfg_t const uart5_pads[] = {
+	MX7D_PAD_GPIO1_IO07__UART5_TX_DATA | MUX_PAD_CTRL(UART_PAD_CTRL),
+	MX7D_PAD_GPIO1_IO06__UART5_RX_DATA | MUX_PAD_CTRL(UART_PAD_CTRL),
+	MX7D_PAD_I2C3_SDA__UART5_DCE_RTS | MUX_PAD_CTRL(UART_PAD_CTRL),
+	MX7D_PAD_I2C3_SCL__UART5_DCE_CTS | MUX_PAD_CTRL(UART_PAD_CTRL),
 };
 
 static iomux_v3_cfg_t const usdhc1_pads[] = {
@@ -218,7 +211,8 @@ static void setup_iomux_fec(void)
 
 static void setup_iomux_uart(void)
 {
-	imx_iomux_v3_setup_multiple_pads(uart1_pads, ARRAY_SIZE(uart1_pads));
+/*	imx_iomux_v3_setup_multiple_pads(uart1_pads, ARRAY_SIZE(uart1_pads)); */
+	imx_iomux_v3_setup_multiple_pads(uart5_pads, ARRAY_SIZE(uart5_pads));
 }
 
 #ifdef CONFIG_FSL_QSPI
@@ -424,7 +418,6 @@ int board_early_init_f(void)
 
 #ifdef CONFIG_SYS_I2C_MXC
 	setup_i2c(0, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info1);
-	setup_i2c(2, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info3);
 #endif
 
 	return 0;
