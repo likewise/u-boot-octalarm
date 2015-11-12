@@ -77,7 +77,7 @@
 #define CONFIG_FEC_MXC_PHYADDR          0
 
 #define CONFIG_PHYLIB
-#define CONFIG_PHY_BROADCOM
+#define CONFIG_PHY_MICREL
 #define CONFIG_FEC_DMA_MINALIGN		64
 
 /* ENET1 */
