@@ -412,6 +412,25 @@ int board_phy_config(struct phy_device *phydev)
 }
 #endif
 
+#define ETH1_RESET_N IMX_GPIO_NR(2,30)
+static iomux_v3_cfg_t const eth1_reset_b_pads[] = {
+	MX7D_PAD_EPDC_PWR_COM__GPIO2_IO30 | MUX_PAD_CTRL(NO_PAD_CTRL),
+};
+
+/* POR_B reset signal to the PHY is deasserted at the same time that the rail
+ * powering the PHY is powered on. Assert the reset GPIO on boot to ensure that
+ * the PHY is reset properly.
+ */
+void eth1_reset_b_assert(void)
+{
+	imx_iomux_v3_setup_multiple_pads(eth1_reset_b_pads, ARRAY_SIZE(eth1_reset_b_pads));
+
+	gpio_request(ETH1_RESET_N, "eth1_reset_n");
+	gpio_direction_output(ETH1_RESET_N, 0);
+	udelay(1000);
+	gpio_direction_output(ETH1_RESET_N, 1);
+}
+
 int board_early_init_f(void)
 {
 	setup_iomux_uart();
@@ -439,6 +458,9 @@ int board_init(void)
 #ifdef CONFIG_FSL_QSPI
 	board_qspi_init();
 #endif
+
+	eth1_reset_b_assert();
+
 	return 0;
 }
 
