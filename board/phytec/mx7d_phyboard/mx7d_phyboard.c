@@ -103,6 +103,10 @@ int dram_init(void)
 	return 0;
 }
 
+static iomux_v3_cfg_t const wdog_pads[] = {
+	MX7D_PAD_GPIO1_IO00__WDOG1_WDOG_B | MUX_PAD_CTRL(NO_PAD_CTRL),
+};
+
 static iomux_v3_cfg_t const uart1_pads[] = {
 	MX7D_PAD_UART1_TX_DATA__UART1_DCE_TX | MUX_PAD_CTRL(UART_PAD_CTRL),
 	MX7D_PAD_UART1_RX_DATA__UART1_DCE_RX | MUX_PAD_CTRL(UART_PAD_CTRL),
@@ -507,6 +511,10 @@ int board_late_init(void)
 #ifdef CONFIG_ENV_IS_IN_MMC
 	board_late_mmc_init();
 #endif
+
+	imx_iomux_v3_setup_multiple_pads(wdog_pads, ARRAY_SIZE(wdog_pads));
+
+	set_wdog_reset((struct wdog_regs *)WDOG1_BASE_ADDR);
 
 	return 0;
 }
