@@ -71,6 +71,13 @@ config TARGET_WARP7
 	select DM
 	select DM_THERMAL
 
+config TARGET_MX7D_PHYBOARD_ZETA
+	bool "Support PHYTEC i.MX7S/D phyBoard Zeta"
+	select BOARD_LATE_INIT
+	select MX7D
+	select DM
+	select DM_THERMAL
+
 config TARGET_COLIBRI_IMX7
 	bool "Support Colibri iMX7S/iMX7D modules"
 	select BOARD_LATE_INIT
@@ -91,5 +98,6 @@ source "board/freescale/mx7d_19x19_lpddr3_arm2/Kconfig"
 source "board/freescale/pico-imx7d/Kconfig"
 source "board/toradex/colibri_imx7/Kconfig"
 source "board/warp7/Kconfig"
+source "board/phytec/mx7d_phyboard_zeta/Kconfig"
 
 endif

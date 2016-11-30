@@ -1,13 +1,10 @@
-if TARGET_MX7D_PHYBOARD
+if TARGET_MX7D_PHYBOARD_ZETA
 
 config SYS_BOARD
 	default "mx7d_phyboard_zeta"
 
 config SYS_VENDOR
 	default "phytec"
-
-config SYS_SOC
-	default "mx7"
 
 config SYS_CONFIG_NAME
 	default "mx7d_phyboard_zeta"
