@@ -1,4 +1,4 @@
-CONFIG_SYS_EXTRA_OPTIONS="IMX_CONFIG=board/phytec/mx7d_phyboard/imximage.cfg,MX7D"
+CONFIG_SYS_EXTRA_OPTIONS="IMX_CONFIG=board/phytec/mx7d_phyboard_zeta/imximage.cfg,MX7D"
 CONFIG_ARM=y
 CONFIG_TARGET_MX7D_PHYBOARD=y
 CONFIG_SYS_MALLOC_F=y

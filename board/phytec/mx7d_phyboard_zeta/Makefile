@@ -5,7 +5,7 @@
 # SPDX-License-Identifier:	GPL-2.0+
 #
 
-obj-y  := mx7d_phyboard.o
+obj-y  := mx7d_phyboard_zeta.o
 
 extra-$(CONFIG_USE_PLUGIN) :=  plugin.bin
 $(obj)/plugin.bin: $(obj)/plugin.o
