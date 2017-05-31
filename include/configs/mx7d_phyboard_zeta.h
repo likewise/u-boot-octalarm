@@ -115,6 +115,7 @@
 #endif
 
 #define CONFIG_SYS_MMC_IMG_LOAD_PART	1
+
 #ifdef CONFIG_SYS_BOOT_NAND
 #define CONFIG_MFG_NAND_PARTITION "mtdparts=gpmi-nand:64m(boot),16m(kernel),16m(dtb),-(rootfs) "
 #else
@@ -134,20 +135,6 @@
 	"initrd_high=0xffffffff\0" \
 	"bootcmd_mfg=run mfgtool_args;bootz ${loadaddr} ${initrd_addr} ${fdt_addr};\0" \
 
-#if defined(CONFIG_SYS_BOOT_NAND)
-#define CONFIG_EXTRA_ENV_SETTINGS \
-	CONFIG_MFG_ENV_SETTINGS \
-	"fdt_addr=0x83000000\0" \
-	"fdt_high=0xffffffff\0"	  \
-	"console=ttymxc4\0" \
-	"bootargs=console=ttymxc4,115200 ubi.mtd=3 "  \
-		"root=ubi0:rootfs rootfstype=ubifs "		     \
-		"mtdparts=gpmi-nand:64m(boot),16m(kernel),16m(dtb),-(rootfs)\0"\
-	"bootcmd=nand read ${loadaddr} 0x4000000 0x800000;"\
-		"nand read ${fdt_addr} 0x5000000 0x100000;"\
-		"bootz ${loadaddr} - ${fdt_addr}\0"
-
-#else
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	CONFIG_MFG_ENV_SETTINGS \
 	UPDATE_M4_ENV \
@@ -173,6 +160,14 @@
 	"loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
 	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
 	"mmcboot=echo Booting from mmc ...; " \
+		"mmc dev ${mmcdev}; if mmc rescan; then " \
+			"if run loadbootscript; then " \
+				"run bootscript; " \
+			"else " \
+				"run mmcbootcmd; " \
+			"fi; " \
+		"fi;\0" \
+	"mmcbootcmd=run loadimage; "\
 		"run mmcargs; " \
 		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
 			"if run loadfdt; then " \
@@ -187,10 +182,19 @@
 		"else " \
 			"bootz; " \
 		"fi;\0" \
+	"nandroot=ubi0:rootfs rootfstype=ubifs \0" \
+	"nandargs=setenv bootargs console=${console},${baudrate} ubi.mtd=3 " \
+		"root=${nandroot} " \
+		"mtdparts=gpmi-nand:64m(boot),16m(kernel),16m(dtb),-(rootfs)\0"\
+	"nandboot=echo Booting from nand ...; " \
+		"run nandargs; " \
+		"nand read ${loadaddr} 0x4000000 0x800000;"\
+		"nand read ${fdt_addr} 0x5000000 0x100000;"\
+		"bootz ${loadaddr} - ${fdt_addr}\0" \
 	"netargs=setenv bootargs console=${console},${baudrate} " \
 		"root=/dev/nfs " \
-	"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
-		"netboot=echo Booting from net ...; " \
+		"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
+	"netboot=echo Booting from net ...; " \
 		"run netargs; " \
 		"if test ${ip_dyn} = yes; then " \
 			"setenv get_cmd dhcp; " \
@@ -211,19 +215,12 @@
 		"else " \
 			"bootz; " \
 		"fi;\0"
-
+#ifdef CONFIG_SYS_BOOT_NAND
 #define CONFIG_BOOTCOMMAND \
-	   "mmc dev ${mmcdev};" \
-	   "mmc dev ${mmcdev}; if mmc rescan; then " \
-		   "if run loadbootscript; then " \
-			   "run bootscript; " \
-		   "else " \
-			   "if run loadimage; then " \
-				   "run mmcboot; " \
-			   "else run netboot; " \
-			   "fi; " \
-		   "fi; " \
-	   "else run netboot; fi"
+        "run nandboot"
+#else
+#define CONFIG_BOOTCOMMAND \
+	"run mmcboot"
 #endif
 
 /* Miscellaneous configurable options */
