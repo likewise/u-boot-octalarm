@@ -56,10 +56,6 @@
 #define PHYS_SDRAM_SIZE			SZ_1G
 #endif
 
-#ifndef CONFIG_FDT
-#define CONFIG_FDT			"imx7d-phyboard-zeta-001"
-#endif
-
 #define CONFIG_CMD_PING
 #define CONFIG_CMD_DHCP
 #define CONFIG_CMD_MII
@@ -147,7 +143,7 @@
 	"console=ttymxc4\0" \
 	"fdt_high=0xffffffff\0" \
 	"initrd_high=0xffffffff\0" \
-	"fdt_file="__stringify(CONFIG_FDT)".dtb\0" \
+	"fdt_file=imx7d-phyboard-zeta.dtb\0" \
 	"fdt_addr=0x83000000\0" \
 	"boot_fdt=try\0" \
 	"ip_dyn=yes\0" \
