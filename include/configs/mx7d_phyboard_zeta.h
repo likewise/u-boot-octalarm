@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Freescale Semiconductor, Inc.
+ * Copyright (C) 2017 PHYTEC America, LLC
  *
  * Configuration settings for the PHYTEC i.MX7D phyBOARD-Zeta.
  *
@@ -23,6 +23,9 @@
 /* uncomment for SECURE mode support */
 /* #define CONFIG_SECURE_BOOT */
 
+/* Size of malloc() pool */
+#define CONFIG_SYS_MALLOC_LEN		(32 * SZ_1M)
+
 #ifdef CONFIG_SECURE_BOOT
 #ifndef CONFIG_CSF_SIZE
 #define CONFIG_CSF_SIZE 0x4000
@@ -45,9 +48,6 @@
 #define CONFIG_CONS_INDEX		5
 #define CONFIG_BAUDRATE			115200
 
-/* MMC Configs */
-#define CONFIG_SYS_FSL_ESDHC_ADDR	0
-
 #ifdef CONFIG_PHYTEC_MT41K64M16TW107IT
 #define PHYS_SDRAM_SIZE			SZ_256M
 #elif defined CONFIG_PHYTEC_MT41K256M16TW107IT
@@ -56,46 +56,54 @@
 #define PHYS_SDRAM_SIZE			SZ_1G
 #endif
 
-#define CONFIG_CMD_PING
-#define CONFIG_CMD_DHCP
-#define CONFIG_CMD_MII
+/* Network */
+#ifdef CONFIG_DM_ETH
 #define CONFIG_FEC_MXC
 #define CONFIG_MII
 #define CONFIG_FEC_XCV_TYPE             RGMII
-#define CONFIG_ETHPRIME                 "FEC"
-#define CONFIG_FEC_MXC_PHYADDR          1
+#define CONFIG_FEC_ENET_DEV             0
 
 #define CONFIG_PHYLIB
 #define CONFIG_PHY_MICREL
 
 /* ENET1 */
+#if (CONFIG_FEC_ENET_DEV == 0)
 #define IMX_FEC_BASE			ENET_IPS_BASE_ADDR
-#define CONFIG_FEC_MXC_MDIO_BASE        ENET_IPS_BASE_ADDR
+#define CONFIG_FEC_MXC_PHYADDR		1
+#ifdef CONFIG_DM_ETH
+#define CONFIG_ETHPRIME			"eth0"
+#else
+#define CONFIG_ETHPRIME			"FEC0"
+#endif
+#elif (CONFIG_FEC_ENET_DEV == 1)
+#define IMX_FEC_BASE			ENET2_IPS_BASE_ADDR
+#define CONFIG_FEC_MXC_PHYADDR		2
+#ifdef CONFIG_DM_ETH
+#define CONFIG_ETHPRIME			"eth1"
+#else
+#define CONFIG_ETHPRIME			"FEC1"
+#endif
+#endif
 
-/* PMIC */
-#define CONFIG_POWER
-#define CONFIG_POWER_I2C
-#define CONFIG_POWER_PFUZE3000
-#define CONFIG_POWER_PFUZE3000_I2C_ADDR	0x08
+#define CONFIG_FEC_MXC_MDIO_BASE	ENET_IPS_BASE_ADDR
+#endif
 
 #undef CONFIG_BOOTM_NETBSD
 #undef CONFIG_BOOTM_PLAN9
 #undef CONFIG_BOOTM_RTEMS
 
-#undef CONFIG_CMD_EXPORTENV
-#undef CONFIG_CMD_IMPORTENV
 
 /* I2C configs */
-#define CONFIG_CMD_I2C
-#define CONFIG_SYS_I2C
 #define CONFIG_SYS_I2C_MXC
-#define CONFIG_SYS_I2C_MXC_I2C1         /* enable I2C bus 1 */
 #define CONFIG_SYS_I2C_SPEED		100000
 
+#ifdef CONFIG_FSL_QSPI
 #define CONFIG_SYS_AUXCORE_BOOTDATA 0x60100000 /* Set to QSPI1 A flash at default */
+#else
+#define CONFIG_SYS_AUXCORE_BOOTDATA 0x7F8000 /* Set to TCML address */
+#endif
 
-
-#ifdef CONFIG_CMD_BOOTAUX
+#ifdef CONFIG_IMX_BOOTAUX
 #define UPDATE_M4_ENV \
 	"m4image=m4_qspi.bin\0" \
 	"loadm4image=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${m4image}\0" \
@@ -114,9 +122,10 @@
 #define UPDATE_M4_ENV ""
 #endif
 
+#define CONFIG_SUPPORT_EMMC_BOOT		/* eMMC specific */
 #define CONFIG_SYS_MMC_IMG_LOAD_PART	1
 
-#ifdef CONFIG_SYS_BOOT_NAND
+#ifdef CONFIG_NAND_BOOT
 #define CONFIG_MFG_NAND_PARTITION "mtdparts=gpmi-nand:64m(boot),16m(kernel),16m(dtb),-(rootfs) "
 #else
 #define CONFIG_MFG_NAND_PARTITION ""
@@ -215,7 +224,7 @@
 		"else " \
 			"bootz; " \
 		"fi;\0"
-#ifdef CONFIG_SYS_BOOT_NAND
+#ifdef CONFIG_NAND_BOOT
 #define CONFIG_BOOTCOMMAND \
         "run nandboot"
 #else
@@ -223,14 +232,6 @@
 	"run mmcboot"
 #endif
 
-/* Miscellaneous configurable options */
-#define CONFIG_SYS_PROMPT		"=> "
-
-/* Print Buffer Size */
-#define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
-#define CONFIG_SYS_BARGSIZE CONFIG_SYS_CBSIZE
-
-#define CONFIG_CMD_MEMTEST
 #define CONFIG_SYS_MEMTEST_START	0x80000000
 #define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_MEMTEST_START + 0x20000000)
 
@@ -257,22 +258,21 @@
 
 #define CONFIG_ENV_SIZE			SZ_8K
 
-#ifdef CONFIG_SYS_BOOT_QSPI
-#define CONFIG_SYS_USE_QSPI
+#ifdef CONFIG_QSPI_BOOT
+#define CONFIG_FSL_QSPI
 #define CONFIG_ENV_IS_IN_SPI_FLASH
-#elif defined CONFIG_SYS_BOOT_NAND
-#define CONFIG_SYS_USE_NAND
+#elif defined CONFIG_NAND_BOOT
+#define CONFIG_NAND_MXS
 #define CONFIG_ENV_IS_IN_NAND
 #else
 #define CONFIG_ENV_IS_IN_MMC
 #endif
 
-#ifdef CONFIG_SYS_USE_NAND
+#ifdef CONFIG_NAND_MXS
 #define CONFIG_CMD_NAND
 #define CONFIG_CMD_NAND_TRIMFFS
 
 /* NAND stuff */
-#define CONFIG_NAND_MXS
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
 #define CONFIG_SYS_NAND_BASE		0x40000000
 #define CONFIG_SYS_NAND_5_ADDR_CYCLE
@@ -284,27 +284,25 @@
 #define CONFIG_APBH_DMA_BURST8
 #endif
 
-#define CONFIG_SYS_USE_QSPI
+#ifdef CONFIG_FSL_QSPI
+#define CONFIG_SYS_FSL_QSPI_AHB
+#define QSPI0_BASE_ADDR		QSPI1_IPS_BASE_ADDR
+#define QSPI0_AMBA_BASE		QSPI0_ARB_BASE_ADDR
 
-#ifdef CONFIG_SYS_USE_QSPI
-#define CONFIG_FSL_QSPI    /* enable the QUADSPI driver */
-#define CONFIG_QSPI_BASE		QSPI1_IPS_BASE_ADDR
-#define CONFIG_QSPI_MEMMAP_BASE		QSPI0_ARB_BASE_ADDR
-
-#define CONFIG_CMD_SF
-#define	CONFIG_SPI_FLASH
 #define	CONFIG_SPI_FLASH_STMICRO
 #define	CONFIG_SPI_FLASH_BAR
 #define	CONFIG_SF_DEFAULT_BUS		0
 #define	CONFIG_SF_DEFAULT_CS		0
 #define	CONFIG_SF_DEFAULT_SPEED		40000000
 #define	CONFIG_SF_DEFAULT_MODE		SPI_MODE_0
+#define FSL_QSPI_FLASH_NUM		1
+#define FSL_QSPI_FLASH_SIZE		SZ_16M
 #endif
 
 #if defined(CONFIG_ENV_IS_IN_MMC)
-#define CONFIG_ENV_OFFSET		(8 * SZ_64K)
+#define CONFIG_ENV_OFFSET		(14 * SZ_64K)
 #elif defined(CONFIG_ENV_IS_IN_SPI_FLASH)
-#define CONFIG_ENV_OFFSET		(768 * 1024)
+#define CONFIG_ENV_OFFSET		(896 * 1024)
 #define CONFIG_ENV_SECT_SIZE		(64 * 1024)
 #define CONFIG_ENV_SPI_BUS		CONFIG_SF_DEFAULT_BUS
 #define CONFIG_ENV_SPI_CS		CONFIG_SF_DEFAULT_CS
@@ -317,13 +315,14 @@
 #define CONFIG_ENV_SIZE			CONFIG_ENV_SECT_SIZE
 #endif
 
-#ifdef CONFIG_SYS_USE_NAND
+#ifdef CONFIG_NAND_MXS
 #define CONFIG_SYS_FSL_USDHC_NUM	1
 #else
 #define CONFIG_SYS_FSL_USDHC_NUM	2
 #endif
 
 /* MMC Configs */
+#define CONFIG_SYS_FSL_ESDHC_ADDR	0
 #define CONFIG_SYS_MMC_ENV_DEV		0   /* USDHC1 */
 #define CONFIG_SYS_MMC_ENV_PART		0	/* user area */
 #define CONFIG_MMCROOT			"/dev/mmcblk0p2"  /* USDHC1 */
@@ -331,10 +330,6 @@
 #define CONFIG_CMD_BMODE
 
 /* USB Configs */
-#define CONFIG_CMD_USB
-#define CONFIG_USB_EHCI
-#define CONFIG_USB_EHCI_MX7
-#define CONFIG_USB_STORAGE
 #define CONFIG_EHCI_HCD_INIT_AFTER_RESET
 #define CONFIG_USB_HOST_ETHER
 #define CONFIG_USB_ETHER_ASIX
