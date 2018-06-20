@@ -57,6 +57,12 @@ static iomux_v3_cfg_t const wdog_pads[] = {
 	MX7D_PAD_GPIO1_IO00__WDOG1_WDOG_B | MUX_PAD_CTRL(NO_PAD_CTRL),
 };
 
+
+static iomux_v3_cfg_t const uart1_pads[] = {
+	MX7D_PAD_UART1_RX_DATA__UART1_DCE_RX | MUX_PAD_CTRL(UART_PAD_CTRL),
+	MX7D_PAD_UART1_TX_DATA__UART1_DCE_TX | MUX_PAD_CTRL(UART_PAD_CTRL),
+};
+
 static iomux_v3_cfg_t const uart5_pads[] = {
 	MX7D_PAD_GPIO1_IO07__UART5_TX_DATA | MUX_PAD_CTRL(UART_PAD_CTRL),
 	MX7D_PAD_GPIO1_IO06__UART5_RX_DATA | MUX_PAD_CTRL(UART_PAD_CTRL),
@@ -108,7 +114,19 @@ static void setup_gpmi_nand(void)
 
 static void setup_iomux_uart(void)
 {
-	imx_iomux_v3_setup_multiple_pads(uart5_pads, ARRAY_SIZE(uart5_pads));
+#ifndef CONFIG_CONS_INDEX
+#define CONFIG_CONS_INDEX 5
+#endif
+	switch(CONFIG_CONS_INDEX) {
+	case 1:
+		imx_iomux_v3_setup_multiple_pads(uart1_pads,
+						 ARRAY_SIZE(uart1_pads));
+		break;
+	default:
+		imx_iomux_v3_setup_multiple_pads(uart5_pads,
+						 ARRAY_SIZE(uart5_pads));
+		break;
+	}
 }
 
 #ifdef CONFIG_FSL_QSPI
