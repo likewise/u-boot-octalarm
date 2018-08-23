@@ -25,6 +25,12 @@
 #include "../../freescale/common/pfuze.h"
 #include <asm/arch/crm_regs.h>
 
+#define NUM_SUPPORTED_VARIATIONS 3
+static const char * const board_variations[NUM_SUPPORTED_VARIATIONS] = {
+	"failsafe",						/* 0: Minimal */
+	"PBA-C-09 Plotech display",		/* 1: Development kit */
+	"ADS4500A",				/* 2: ADS4500A */
+};
 DECLARE_GLOBAL_DATA_PTR;
 
 #define UART_PAD_CTRL  (PAD_CTL_DSE_3P3V_49OHM | \
@@ -57,11 +63,18 @@ static iomux_v3_cfg_t const wdog_pads[] = {
 	MX7D_PAD_GPIO1_IO00__WDOG1_WDOG_B | MUX_PAD_CTRL(NO_PAD_CTRL),
 };
 
-static iomux_v3_cfg_t const uart5_pads[] = {
+static iomux_v3_cfg_t const uart_console_pads[] = {
+#if (CONFIG_CONS_INDEX == 1)
+	MX7D_PAD_UART1_TX_DATA__UART1_DCE_TX | MUX_PAD_CTRL(UART_PAD_CTRL),
+	MX7D_PAD_UART1_RX_DATA__UART1_DCE_RX | MUX_PAD_CTRL(UART_PAD_CTRL),
+#elif (CONFIG_CONS_INDEX == 5)
 	MX7D_PAD_GPIO1_IO07__UART5_TX_DATA | MUX_PAD_CTRL(UART_PAD_CTRL),
 	MX7D_PAD_GPIO1_IO06__UART5_RX_DATA | MUX_PAD_CTRL(UART_PAD_CTRL),
 	MX7D_PAD_I2C3_SDA__UART5_DCE_RTS | MUX_PAD_CTRL(UART_PAD_CTRL),
 	MX7D_PAD_I2C3_SCL__UART5_DCE_CTS | MUX_PAD_CTRL(UART_PAD_CTRL),
+#else
+#warning Please set CONFIG_CONS_INDEX to a supported value
+#endif
 };
 
 #ifdef CONFIG_NAND_MXS
@@ -108,7 +121,7 @@ static void setup_gpmi_nand(void)
 
 static void setup_iomux_uart(void)
 {
-	imx_iomux_v3_setup_multiple_pads(uart5_pads, ARRAY_SIZE(uart5_pads));
+	imx_iomux_v3_setup_multiple_pads(uart_console_pads, ARRAY_SIZE(uart_console_pads));
 }
 
 #ifdef CONFIG_FSL_QSPI
@@ -263,22 +276,90 @@ int board_late_init(void)
 	return 0;
 }
 
+int misc_init_r(void)
+{
+
+	if (!getenv("ethaddr")) {
+		uchar buf[6];
+		uchar ifm_oui[3] = { 0, 2, 1, };
+		int ret;
+
+		/* I2C-0 for on-board eeprom */
+		i2c_set_bus_num(CONFIG_SYS_I2C_EEPROM_BUS_NUM);
+
+		/* Read ethaddr from EEPROM */
+		ret = i2c_read(CONFIG_SYS_I2C_EEPROM_ADDR,
+			       CONFIG_SYS_I2C_EEPROM_MAC_OFFSET,
+			       CONFIG_SYS_I2C_EEPROM_ADDR_LEN, buf, 6);
+		if (ret != 0) {
+			printf("Error: Unable to read MAC from I2C"
+				" EEPROM at address %02X:%02X\n",
+				CONFIG_SYS_I2C_EEPROM_ADDR,
+				CONFIG_SYS_I2C_EEPROM_MAC_OFFSET);
+			return 1;
+		}
+
+		eth_setenv_enetaddr("ethaddr", buf);
+	}
+
+	return 0;
+}
+
 u32 get_board_rev(void)
 {
-	return get_cpu_rev();
+	uchar buf[1];
+	/* I2C-0 for on-board eeprom */
+	i2c_set_bus_num(CONFIG_SYS_I2C_EEPROM_BUS_NUM);
+	if(i2c_read(CONFIG_SYS_I2C_EEPROM_ADDR,
+			   CONFIG_SYS_I2C_EEPROM_MAC_OFFSET,
+			   CONFIG_SYS_I2C_EEPROM_ADDR_LEN, buf, 1) != 0)
+	{
+		printf("Error: Unable to read board revision from I2C"
+			" EEPROM at address %02X:%02X\n",
+				CONFIG_SYS_I2C_EEPROM_ADDR,
+				CONFIG_SYS_I2C_EEPROM_BOARD_REV_OFFSET);
+		return get_cpu_rev();
+	} else {
+		return buf[0];
+	}
 }
 
 int checkboard(void)
 {
 	char *mode;
+	/* Failsafe board */
+	uchar boardID = 0;
+	uchar buf[4];
 
 	if (IS_ENABLED(CONFIG_ARMV7_BOOT_SEC_DEFAULT))
 		mode = "secure";
 	else
 		mode = "non-secure";
 
-	printf("Board: PHYTEC phyBOARD-Zeta i.MX7%c in %s mode\n",
-		is_cpu_type(MXC_CPU_MX7D) ? 'D' : 'S', mode);
+	i2c_set_bus_num(CONFIG_SYS_I2C_EEPROM_BUS_NUM);
+	if(i2c_read(CONFIG_SYS_I2C_EEPROM_ADDR,
+			   CONFIG_SYS_I2C_EEPROM_MAGIC_OFFSET,
+			   CONFIG_SYS_I2C_EEPROM_ADDR_LEN, buf, 4) != 0)
+	{
+		printf("Error: Unable to read board variation from I2C"
+			" EEPROM at address %02X\n",
+				CONFIG_SYS_I2C_EEPROM_ADDR);
+	} else {
+		if((buf[CONFIG_SYS_I2C_EEPROM_MAGIC_OFFSET] != CONFIG_SYS_I2C_EEPROM_MAGIC) ||
+			(buf[CONFIG_SYS_I2C_EEPROM_REVISION_OFFSET] != CONFIG_SYS_I2C_EEPROM_REVISION) ||
+			(buf[CONFIG_SYS_I2C_EEPROM_BOARD_ID_OFFSET] >= NUM_SUPPORTED_VARIATIONS))
+		{
+			printf("Error: Incompatible board variation info from I2C "
+				" EEPROM at address %02X\n",
+				CONFIG_SYS_I2C_EEPROM_ADDR);
+		} else {
+			boardID = buf[CONFIG_SYS_I2C_EEPROM_BOARD_ID_OFFSET];
+		}
+	}
+	setenv_hex("boardID", boardID);
+
+	printf("Board: PHYTEC phyBOARD-Zeta i.MX7%c in %s mode on %s\n",
+		is_cpu_type(MXC_CPU_MX7D) ? 'D' : 'S', mode, board_variations[boardID]);
 
 	return 0;
 }

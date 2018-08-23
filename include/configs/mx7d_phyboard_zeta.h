@@ -40,12 +40,12 @@
 #define CONFIG_MXC_UART
 
 #undef CONFIG_MXC_UART_BASE
-#define CONFIG_MXC_UART_BASE		UART5_IPS_BASE_ADDR
+#define CONFIG_MXC_UART_BASE		UART1_IPS_BASE_ADDR
 
 /* allow to overwrite serial and ethaddr */
 #define CONFIG_ENV_OVERWRITE
 #undef CONFIG_CONS_INDEX
-#define CONFIG_CONS_INDEX		5
+#define CONFIG_CONS_INDEX		1
 #define CONFIG_BAUDRATE			115200
 
 #ifdef CONFIG_PHYTEC_MT41K64M16TW107IT
@@ -94,10 +94,29 @@
 
 #define CONFIG_CMD_IMPORTENV
 
+#define CONFIG_MISC_INIT_R		/* Call misc_init_r		*/
+
+#ifdef CONFIG_DISPLAY_BOARDINFO
+#undef CONFIG_DISPLAY_BOARDINF
+#endif
+#define CONFIG_DISPLAY_BOARDINFO_LATE
+
 /* I2C configs */
 #define CONFIG_SYS_I2C_MXC
 #define CONFIG_SYS_I2C_SPEED		100000
 #define CONFIG_DM_I2C_COMPAT
+
+#define CONFIG_SYS_I2C_EEPROM_ADDR_LEN  2
+#define CONFIG_SYS_I2C_EEPROM_ADDR      0x50
+#define CONFIG_SYS_I2C_EEPROM_BUS_NUM   0
+
+#define CONFIG_SYS_I2C_EEPROM_MAGIC_OFFSET		0x00
+#	define CONFIG_SYS_I2C_EEPROM_MAGIC			0xAD
+#define CONFIG_SYS_I2C_EEPROM_REVISION_OFFSET	0x01
+#	define CONFIG_SYS_I2C_EEPROM_REVISION		0x01
+#define CONFIG_SYS_I2C_EEPROM_BOARD_ID_OFFSET	0x02
+#define CONFIG_SYS_I2C_EEPROM_BOARD_REV_OFFSET	0x03
+#define CONFIG_SYS_I2C_EEPROM_MAC_OFFSET		0x10
 
 /* Implement bootcounting in the (unused) rtc to support fallback */
 #define CONFIG_BOOTCOUNT_LIMIT
@@ -138,6 +157,29 @@
 #define CONFIG_SUPPORT_EMMC_BOOT		/* eMMC specific */
 #define CONFIG_SYS_MMC_IMG_LOAD_PART	1
 
+/*
+ * boardID and boardRev should be overriden from boot code
+ */
+#define CONFIG_OSTREE_ENV_SETTINGS \
+	"kernel_addr_r=0x81000000\0" \
+	"ostree_partition=1\0" \
+	"ostree_device=/dev/mmcblk0p\0" \
+	"boardID=0\0" \
+	"boardRev=0\0" \
+	"bootcmd_otenv=ext2load mmc ${mmcdev}:${ostree_partition} $loadaddr /boot/loader/uEnv.txt; env import -t $loadaddr $filesize\0" \
+	"bootcmd_args=setenv ostree_root ${ostree_device}${ostree_partition}; " \
+		"setenv bootargs $bootargs $bootargs_fdt ostree_root=${ostree_root} root=${ostree_root} rw rootwait rootdelay=2 console=$console,$baudrate\0" \
+	"bootcmd_load=if test '${fallback}' = true; then " \
+		"ext2load mmc ${mmcdev}:${ostree_partition} $kernel_addr_r /boot${kernel_image2}; " \
+	"else " \
+		"ext2load mmc ${mmcdev}:${ostree_partition} $kernel_addr_r /boot${kernel_image}; " \
+	"fi;\0" \
+	"bootcmd_run=bootm ${kernel_addr_r}#conf@imx7d-octalarm-${boardID}.${boardRev}.dtb; " \
+		"bootm ${kernel_addr_r}#conf@imx7d-octalarm-${boardID}.dtb; " \
+		"bootm ${kernel_addr_r}#conf@imx7d-octalarm-0.dtb;\0" \
+	"bootcmd_ostree=mmc dev ${mmcdev}; mmc rescan; run bootcmd_otenv; run bootcmd_args; run bootcmd_load; run bootcmd_run\0"
+
+
 #define CONFIG_MFG_ENV_SETTINGS \
 	"mfgtool_args=setenv bootargs console=${console},${baudrate} " \
 		"rdinit=/linuxrc " \
@@ -152,16 +194,12 @@
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	CONFIG_MFG_ENV_SETTINGS \
+	CONFIG_OSTREE_ENV_SETTINGS \
 	UPDATE_M4_ENV \
 	CONFIG_BOOTLIMIT_ENV \
 	"script=boot.scr\0" \
 	"image=zImage\0" \
-	"console=ttymxc4\0" \
-	"fdt_high=0xffffffff\0" \
-	"initrd_high=0xffffffff\0" \
-	"fdt_file=oftree\0" \
-	"fdt_addr=0x83000000\0" \
-	"boot_fdt=try\0" \
+	"console=ttymxc0\0" \
 	"ip_dyn=yes\0" \
 	"mmcdev="__stringify(CONFIG_SYS_MMC_ENV_DEV)"\0" \
 	"mmcpart=" __stringify(CONFIG_SYS_MMC_IMG_LOAD_PART) "\0" \
@@ -169,19 +207,11 @@
 	"mmcautodetect=yes\0" \
 	"mmcargs=setenv bootargs console=${console},${baudrate} " \
 		"root=${mmcroot}\0" \
-	"loadbootscript=" \
-		"fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
-	"bootscript=echo Running bootscript from mmc ...; " \
-		"source\0" \
 	"loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
 	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
 	"mmcboot=echo Booting from mmc ...; " \
 		"mmc dev ${mmcdev}; if mmc rescan; then " \
-			"if run loadbootscript; then " \
-				"run bootscript; " \
-			"else " \
-				"run mmcbootcmd; " \
-			"fi; " \
+			"run mmcbootcmd; " \
 		"fi;\0" \
 	"mmcbootcmd=run loadimage; "\
 		"run mmcargs; " \
@@ -223,7 +253,7 @@
 			"bootz; " \
 		"fi;\0"
 
-#define CONFIG_BOOTCOMMAND 			"run mmcboot"
+#define CONFIG_BOOTCOMMAND 			"run bootcmd_ostree"
 
 #define CONFIG_SYS_MEMTEST_START	0x80000000
 #define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_MEMTEST_START + 0x20000000)
@@ -290,7 +320,7 @@
 #define CONFIG_SYS_FSL_ESDHC_ADDR	0
 #define CONFIG_SYS_MMC_ENV_DEV		0   /* USDHC1 */
 #define CONFIG_SYS_MMC_ENV_PART		0	/* user area */
-#define CONFIG_MMCROOT			"/dev/mmcblk0p2"  /* USDHC1 */
+#define CONFIG_MMCROOT			"/dev/mmcblk0p1"  /* USDHC1 */
 
 #define CONFIG_CMD_BMODE
 
