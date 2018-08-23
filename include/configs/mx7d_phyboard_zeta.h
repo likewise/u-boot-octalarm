@@ -92,10 +92,23 @@
 #undef CONFIG_BOOTM_PLAN9
 #undef CONFIG_BOOTM_RTEMS
 
+#define CONFIG_CMD_IMPORTENV
 
 /* I2C configs */
 #define CONFIG_SYS_I2C_MXC
 #define CONFIG_SYS_I2C_SPEED		100000
+#define CONFIG_DM_I2C_COMPAT
+
+/* Implement bootcounting in the (unused) rtc to support fallback */
+#define CONFIG_BOOTCOUNT_LIMIT
+#define CONFIG_BOOTCOUNT_I2C
+#define CONFIG_BOOTCOUNT_ALEN		1
+#define CONFIG_SYS_I2C_RTC_ADDR		0x68
+#define CONFIG_SYS_BOOTCOUNT_ADDR	0x0D
+
+#define CONFIG_BOOTLIMIT_ENV \
+	"bootlimit=3\0" \
+	"altbootcmd=echo Boot failed to often... trying fallback; setenv fallback true; run bootcmd\0"
 
 #ifdef CONFIG_FSL_QSPI
 #define CONFIG_SYS_AUXCORE_BOOTDATA 0x60100000 /* Set to QSPI1 A flash at default */
@@ -125,19 +138,12 @@
 #define CONFIG_SUPPORT_EMMC_BOOT		/* eMMC specific */
 #define CONFIG_SYS_MMC_IMG_LOAD_PART	1
 
-#ifdef CONFIG_NAND_BOOT
-#define CONFIG_MFG_NAND_PARTITION "mtdparts=gpmi-nand:64m(boot),16m(kernel),16m(dtb),-(rootfs) "
-#else
-#define CONFIG_MFG_NAND_PARTITION ""
-#endif
-
 #define CONFIG_MFG_ENV_SETTINGS \
 	"mfgtool_args=setenv bootargs console=${console},${baudrate} " \
 		"rdinit=/linuxrc " \
 		"g_mass_storage.stall=0 g_mass_storage.removable=1 " \
 		"g_mass_storage.idVendor=0x066F g_mass_storage.idProduct=0x37FF "\
 		"g_mass_storage.iSerialNumber=\"\" "\
-		CONFIG_MFG_NAND_PARTITION \
 		"clk_ignore_unused "\
 		"\0" \
 	"initrd_addr=0x83800000\0" \
@@ -147,6 +153,7 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	CONFIG_MFG_ENV_SETTINGS \
 	UPDATE_M4_ENV \
+	CONFIG_BOOTLIMIT_ENV \
 	"script=boot.scr\0" \
 	"image=zImage\0" \
 	"console=ttymxc4\0" \
@@ -191,15 +198,6 @@
 		"else " \
 			"bootz; " \
 		"fi;\0" \
-	"nandroot=ubi0:rootfs rootfstype=ubifs \0" \
-	"nandargs=setenv bootargs console=${console},${baudrate} ubi.mtd=3 " \
-		"root=${nandroot} " \
-		"mtdparts=gpmi-nand:64m(boot),16m(kernel),16m(dtb),-(rootfs)\0"\
-	"nandboot=echo Booting from nand ...; " \
-		"run nandargs; " \
-		"nand read ${loadaddr} 0x4000000 0x800000;"\
-		"nand read ${fdt_addr} 0x5000000 0x100000;"\
-		"bootz ${loadaddr} - ${fdt_addr}\0" \
 	"netargs=setenv bootargs console=${console},${baudrate} " \
 		"root=/dev/nfs " \
 		"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
@@ -224,13 +222,8 @@
 		"else " \
 			"bootz; " \
 		"fi;\0"
-#ifdef CONFIG_NAND_BOOT
-#define CONFIG_BOOTCOMMAND \
-        "run nandboot"
-#else
-#define CONFIG_BOOTCOMMAND \
-	"run mmcboot"
-#endif
+
+#define CONFIG_BOOTCOMMAND 			"run mmcboot"
 
 #define CONFIG_SYS_MEMTEST_START	0x80000000
 #define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_MEMTEST_START + 0x20000000)
@@ -261,27 +254,8 @@
 #ifdef CONFIG_QSPI_BOOT
 #define CONFIG_FSL_QSPI
 #define CONFIG_ENV_IS_IN_SPI_FLASH
-#elif defined CONFIG_NAND_BOOT
-#define CONFIG_NAND_MXS
-#define CONFIG_ENV_IS_IN_NAND
 #else
 #define CONFIG_ENV_IS_IN_MMC
-#endif
-
-#ifdef CONFIG_NAND_MXS
-#define CONFIG_CMD_NAND
-#define CONFIG_CMD_NAND_TRIMFFS
-
-/* NAND stuff */
-#define CONFIG_SYS_MAX_NAND_DEVICE	1
-#define CONFIG_SYS_NAND_BASE		0x40000000
-#define CONFIG_SYS_NAND_5_ADDR_CYCLE
-#define CONFIG_SYS_NAND_ONFI_DETECTION
-
-/* DMA stuff, needed for GPMI/MXS NAND support */
-#define CONFIG_APBH_DMA
-#define CONFIG_APBH_DMA_BURST
-#define CONFIG_APBH_DMA_BURST8
 #endif
 
 #ifdef CONFIG_FSL_QSPI
@@ -308,18 +282,9 @@
 #define CONFIG_ENV_SPI_CS		CONFIG_SF_DEFAULT_CS
 #define CONFIG_ENV_SPI_MODE		CONFIG_SF_DEFAULT_MODE
 #define CONFIG_ENV_SPI_MAX_HZ		CONFIG_SF_DEFAULT_SPEED
-#elif defined(CONFIG_ENV_IS_IN_NAND)
-#undef CONFIG_ENV_SIZE
-#define CONFIG_ENV_OFFSET		(60 << 20)
-#define CONFIG_ENV_SECT_SIZE		(128 << 10)
-#define CONFIG_ENV_SIZE			CONFIG_ENV_SECT_SIZE
 #endif
 
-#ifdef CONFIG_NAND_MXS
-#define CONFIG_SYS_FSL_USDHC_NUM	1
-#else
 #define CONFIG_SYS_FSL_USDHC_NUM	2
-#endif
 
 /* MMC Configs */
 #define CONFIG_SYS_FSL_ESDHC_ADDR	0
