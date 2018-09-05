@@ -179,6 +179,13 @@
 		"bootm ${kernel_addr_r}#conf@imx7d-octalarm-0.dtb;\0" \
 	"bootcmd_ostree=mmc dev ${mmcdev}; mmc rescan; run bootcmd_otenv; run bootcmd_args; run bootcmd_load; run bootcmd_run\0"
 
+/* @TODO maybe compare checksums after read (store in mem, do compare) */
+#define TFTP_PROGRAM_EMMC_ENV \
+	"serverip=192.168.2.4\0" \
+	"tftp_prog_emmc=dhcp ${loadaddr} ${serverip}:imx7/emmc.img; " \
+	"mmc dev 1; mmc rescan; setexpr blocks ${filesize} + 1ff; setexpr blocks ${blocks} + 200; " \
+	"mmc write ${loadaddr} 0 ${blocks}; mw.b ${loadaddr} a5 ${filesize}; " \
+	"mmc read ${loadaddr} 0 ${blocks}; crc32 ${loadaddr} ${filesize};\0"
 
 #define CONFIG_MFG_ENV_SETTINGS \
 	"mfgtool_args=setenv bootargs console=${console},${baudrate} " \
@@ -190,10 +197,11 @@
 		"\0" \
 	"initrd_addr=0x83800000\0" \
 	"initrd_high=0xffffffff\0" \
-	"bootcmd_mfg=run mfgtool_args;bootz ${loadaddr} ${initrd_addr} ${fdt_addr};\0" \
+	"bootcmd_mfg=run mfgtool_args;bootz ${loadaddr} ${initrd_addr} ${fdt_addr};\0"
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	CONFIG_MFG_ENV_SETTINGS \
+	TFTP_PROGRAM_EMMC_ENV \
 	CONFIG_OSTREE_ENV_SETTINGS \
 	UPDATE_M4_ENV \
 	CONFIG_BOOTLIMIT_ENV \
@@ -333,5 +341,17 @@
 #define CONFIG_USB_MAX_CONTROLLER_COUNT 2
 
 #define CONFIG_IMX_THERMAL
+
+#ifdef CONFIG_VIDEO
+#define CONFIG_VIDEO_MXS
+#define CONFIG_VIDEO_LOGO
+#define CONFIG_SPLASH_SCREEN
+#define CONFIG_SPLASH_SCREEN_ALIGN
+#define CONFIG_CMD_BMP
+#define CONFIG_BMP_16BPP
+#define CONFIG_VIDEO_BMP_RLE8
+#define CONFIG_VIDEO_BMP_LOGO
+#define CONFIG_IMX_VIDEO_SKIP
+#endif
 
 #endif	/* __CONFIG_H */

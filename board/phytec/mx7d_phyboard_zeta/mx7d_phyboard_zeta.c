@@ -1,4 +1,4 @@
-/*
+De/*
  * Copyright (C) 2015-2017 PHYTEC America, LLC
  *
  * Based on board/freescale/mx7dsabresd/mx7dsabresd.c
@@ -24,6 +24,7 @@
 #include <power/pfuze3000_pmic.h>
 #include "../../freescale/common/pfuze.h"
 #include <asm/arch/crm_regs.h>
+#include <asm/imx-common/video.h>
 
 #define NUM_SUPPORTED_VARIATIONS 3
 static const char * const board_variations[NUM_SUPPORTED_VARIATIONS] = {
@@ -118,6 +119,90 @@ static void setup_gpmi_nand(void)
 }
 #endif /* CONFIG_NAND_MXS */
 
+/* @TODO WIP meld freescale/mx7dsabresd/mx7dsabresd.c phytec/mx7d_phyboard_zeta/mx7d_phyboard_zeta.c */
+#ifdef CONFIG_VIDEO_MXS
+static iomux_v3_cfg_t const lcd_pads[] = {
+	MX7D_PAD_LCD_CLK__LCD_CLK | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_ENABLE__LCD_ENABLE | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_HSYNC__LCD_HSYNC | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_VSYNC__LCD_VSYNC | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA00__LCD_DATA0 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA01__LCD_DATA1 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA02__LCD_DATA2 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA03__LCD_DATA3 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA04__LCD_DATA4 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA05__LCD_DATA5 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA06__LCD_DATA6 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA07__LCD_DATA7 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA08__LCD_DATA8 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA09__LCD_DATA9 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA10__LCD_DATA10 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA11__LCD_DATA11 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA12__LCD_DATA12 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA13__LCD_DATA13 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA14__LCD_DATA14 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA15__LCD_DATA15 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA16__LCD_DATA16 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA17__LCD_DATA17 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA18__LCD_DATA18 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA19__LCD_DATA19 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA20__LCD_DATA20 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA21__LCD_DATA21 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA22__LCD_DATA22 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+	MX7D_PAD_LCD_DATA23__LCD_DATA23 | MUX_PAD_CTRL(LCD_PAD_CTRL),
+
+	MX7D_PAD_LCD_RESET__GPIO3_IO4	| MUX_PAD_CTRL(LCD_PAD_CTRL),
+};
+
+static iomux_v3_cfg_t const pwm_pads[] = {
+	/* Use GPIO for Brightness adjustment, duty cycle = period */
+	MX7D_PAD_GPIO1_IO03__PWM3_OUT | MUX_PAD_CTRL(NO_PAD_CTRL),
+	MX7D_PAD_EPDC_DATA15__GPIO2_IO15 | MUX_PAD_CTRL(NO_PAD_CTRL),
+};
+
+void do_enable_parallel_lcd(struct display_info_t const *dev)
+{
+	imx_iomux_v3_setup_multiple_pads(lcd_pads, ARRAY_SIZE(lcd_pads));
+
+	imx_iomux_v3_setup_multiple_pads(pwm_pads, ARRAY_SIZE(pwm_pads));
+
+	/* Reset LCD */
+	gpio_request(IMX_GPIO_NR(3, 4), "lcd reset");
+	gpio_direction_output(IMX_GPIO_NR(3, 4) , 0);
+	udelay(500);
+	gpio_direction_output(IMX_GPIO_NR(3, 4) , 1);
+
+	/* De-assert Display Force-Off */
+	gpio_request(IMX_GPIO_NR(2, 15), "lcd disable");
+	gpio_direction_output(IMX_GPIO_NR(2, 15) , 1);
+
+	/* Set Brightness to high */
+	gpio_request(IMX_GPIO_NR(1, 3), "lcd backlight");
+	gpio_direction_output(IMX_GPIO_NR(1, 3) , 1);
+}
+
+struct display_info_t const displays[] = {{
+	.bus = ELCDIF1_IPS_BASE_ADDR,
+	.addr = 0,
+	.pixfmt = 24,
+	.detect = NULL,
+	.enable	= do_enable_parallel_lcd,
+	.mode	= {
+		.name			= "KWH070KQ20F01",
+		.xres           = 800,
+		.yres           = 480,
+		.pixclock       = 30006,
+		.left_margin    = 26,
+		.right_margin   = 210,
+		.upper_margin   = 17,
+		.lower_margin   = 23,
+		.hsync_len      = 20,
+		.vsync_len      = 6,
+		.sync           = 0,
+		.vmode          = FB_VMODE_NONINTERLACED
+} } };
+size_t display_count = ARRAY_SIZE(displays);
+#endif
 
 static void setup_iomux_uart(void)
 {
