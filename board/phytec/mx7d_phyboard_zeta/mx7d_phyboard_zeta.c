@@ -1,4 +1,4 @@
-De/*
+/*
  * Copyright (C) 2015-2017 PHYTEC America, LLC
  *
  * Based on board/freescale/mx7dsabresd/mx7dsabresd.c
