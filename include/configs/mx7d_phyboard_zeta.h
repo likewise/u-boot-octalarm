@@ -183,7 +183,7 @@
 #define TFTP_PROGRAM_EMMC_ENV \
 	"serverip=192.168.2.4\0" \
 	"tftp_prog_emmc=dhcp ${loadaddr} ${serverip}:imx7/emmc.img; " \
-	"mmc dev 1; mmc rescan; setexpr blocks ${filesize} + 1ff; setexpr blocks ${blocks} + 200; " \
+	"mmc dev 1; mmc rescan; setexpr blocks ${filesize} + 1ff; setexpr blocks ${blocks} / 200; " \
 	"mmc write ${loadaddr} 0 ${blocks}; mw.b ${loadaddr} a5 ${filesize}; " \
 	"mmc read ${loadaddr} 0 ${blocks}; crc32 ${loadaddr} ${filesize};\0"
 
