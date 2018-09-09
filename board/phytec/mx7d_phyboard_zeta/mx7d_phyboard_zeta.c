@@ -156,7 +156,7 @@ static iomux_v3_cfg_t const lcd_pads[] = {
 
 static iomux_v3_cfg_t const pwm_pads[] = {
 	/* Use GPIO for Brightness adjustment, duty cycle = period */
-	MX7D_PAD_GPIO1_IO03__PWM3_OUT | MUX_PAD_CTRL(NO_PAD_CTRL),
+	MX7D_PAD_GPIO1_IO03__GPIO1_IO3 | MUX_PAD_CTRL(NO_PAD_CTRL),
 	MX7D_PAD_EPDC_DATA15__GPIO2_IO15 | MUX_PAD_CTRL(NO_PAD_CTRL),
 };
 
@@ -174,7 +174,7 @@ void do_enable_parallel_lcd(struct display_info_t const *dev)
 
 	/* De-assert Display Force-Off */
 	gpio_request(IMX_GPIO_NR(2, 15), "lcd disable");
-	gpio_direction_output(IMX_GPIO_NR(2, 15) , 1);
+	gpio_direction_output(IMX_GPIO_NR(2, 15) , 0);
 
 	/* Set Brightness to high */
 	gpio_request(IMX_GPIO_NR(1, 3), "lcd backlight");
