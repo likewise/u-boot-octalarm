@@ -163,21 +163,20 @@ static iomux_v3_cfg_t const pwm_pads[] = {
 void do_enable_parallel_lcd(struct display_info_t const *dev)
 {
 	imx_iomux_v3_setup_multiple_pads(lcd_pads, ARRAY_SIZE(lcd_pads));
-
 	imx_iomux_v3_setup_multiple_pads(pwm_pads, ARRAY_SIZE(pwm_pads));
 
-	/* Reset LCD */
-	gpio_request(IMX_GPIO_NR(3, 4), "lcd reset");
+	/* reset LCD, active low */
+	gpio_request(IMX_GPIO_NR(3, 4), "DIS-RST");
 	gpio_direction_output(IMX_GPIO_NR(3, 4) , 0);
 	udelay(500);
 	gpio_direction_output(IMX_GPIO_NR(3, 4) , 1);
 
-	/* De-assert Display Force-Off */
-	gpio_request(IMX_GPIO_NR(2, 15), "lcd disable");
+	/* de-assert display force-off */
+	gpio_request(IMX_GPIO_NR(2, 15), "DIS-FORCEOFF");
 	gpio_direction_output(IMX_GPIO_NR(2, 15) , 0);
 
-	/* Set Brightness to high */
-	gpio_request(IMX_GPIO_NR(1, 3), "lcd backlight");
+	/* Maximum backlight brightness to maximum, using GPIO, not PWM */
+	gpio_request(IMX_GPIO_NR(1, 3), "DIS-PWM-BL");
 	gpio_direction_output(IMX_GPIO_NR(1, 3) , 1);
 }
 
@@ -188,14 +187,15 @@ struct display_info_t const displays[] = {{
 	.detect = NULL,
 	.enable	= do_enable_parallel_lcd,
 	.mode	= {
-		.name			= "KWH070KQ20F01",
+		// timing for YES Optoelectronics YTS700RLAS-01-100C
+		.name			= "YTS700RLAS01100C",
 		.xres           = 800,
 		.yres           = 480,
 		.pixclock       = 30006,
 		.left_margin    = 26,
 		.right_margin   = 210,
 		.upper_margin   = 17,
-		.lower_margin   = 23,
+		.lower_margin   = 22,
 		.hsync_len      = 20,
 		.vsync_len      = 6,
 		.sync           = 0,
