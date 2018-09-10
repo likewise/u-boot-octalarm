@@ -16,6 +16,7 @@
 #include <asm/io.h>
 #include <linux/sizes.h>
 #include <common.h>
+#include <splash.h>
 #include <fsl_esdhc.h>
 #include <mmc.h>
 #include <miiphy.h>
@@ -119,7 +120,24 @@ static void setup_gpmi_nand(void)
 }
 #endif /* CONFIG_NAND_MXS */
 
-/* @TODO WIP meld freescale/mx7dsabresd/mx7dsabresd.c phytec/mx7d_phyboard_zeta/mx7d_phyboard_zeta.c */
+#ifdef CONFIG_SPLASH_SCREEN
+static struct splash_location octalarm_splash_locations[] = {
+        {
+                .name = "mmc_fs",
+                .storage = SPLASH_STORAGE_MMC,
+                .flags = SPLASH_STORAGE_FS,
+                .devpart = "1:1",
+        },
+};
+
+/* overrides weak function in common/splash.c */
+int splash_screen_prepare(void)
+{
+        return splash_source_load(octalarm_splash_locations,
+                                  ARRAY_SIZE(octalarm_splash_locations));
+}
+#endif
+
 #ifdef CONFIG_VIDEO_MXS
 static iomux_v3_cfg_t const lcd_pads[] = {
 	MX7D_PAD_LCD_CLK__LCD_CLK | MUX_PAD_CTRL(LCD_PAD_CTRL),
