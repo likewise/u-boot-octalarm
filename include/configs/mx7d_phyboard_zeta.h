@@ -179,13 +179,17 @@
 		"bootm ${kernel_addr_r}#conf@imx7d-octalarm-0.dtb;\0" \
 	"bootcmd_ostree=mmc dev ${mmcdev}; mmc rescan; run bootcmd_otenv; run bootcmd_args; run bootcmd_load; run bootcmd_run\0"
 
-/* @TODO maybe compare checksums after read (store in mem, do compare) */
+/* @TODO compare checksums after read (store in mem, do compare) */
 #define TFTP_PROGRAM_EMMC_ENV \
-	"serverip=192.168.2.4\0" \
+	"serverip=192.168.2.17\0" \
 	"tftp_prog_emmc=dhcp ${loadaddr} ${serverip}:imx7/emmc.img; " \
 	"mmc dev 1; mmc rescan; setexpr blocks ${filesize} + 1ff; setexpr blocks ${blocks} / 200; " \
 	"mmc write ${loadaddr} 0 ${blocks}; mw.b ${loadaddr} a5 ${filesize}; " \
-	"mmc read ${loadaddr} 0 ${blocks}; crc32 ${loadaddr} ${filesize};\0"
+	"mmc read ${loadaddr} 0 ${blocks}; crc32 ${loadaddr} ${filesize};\0" \
+	"tftp_prog_boot=dhcp ${loadaddr} ${serverip}:imx7/u-boot.imx; " \
+	"mmc dev 1; mmc rescan; setexpr blocks ${filesize} + 1ff; setexpr blocks ${blocks} / 200; " \
+	"mmc write ${loadaddr} 2 ${blocks}; mw.b ${loadaddr} a5 ${filesize}; " \
+	"mmc read ${loadaddr} 2 ${blocks}; crc32 ${loadaddr} ${filesize};\0"
 
 #define CONFIG_MFG_ENV_SETTINGS \
 	"mfgtool_args=setenv bootargs console=${console},${baudrate} " \
