@@ -166,7 +166,7 @@
 	"ostree_device=/dev/mmcblk0p\0" \
 	"boardID=0\0" \
 	"boardRev=0\0" \
-	"bootcmd_otenv=ext2load mmc ${mmcdev}:${ostree_partition} $loadaddr /boot/loader/uEnv.txt; env import -t $loadaddr $filesize\0" \
+	"bootcmd_otenv=ext4load mmc ${mmcdev}:${ostree_partition} $loadaddr /boot/loader/uEnv.txt; env import -t $loadaddr $filesize\0" \
 	"bootcmd_args=setenv ostree_root ${ostree_device}${ostree_partition}; " \
 		"setenv bootargs $bootargs $bootargs_fdt ostree_root=${ostree_root} root=${ostree_root} rw rootwait rootdelay=2 console=$console,$baudrate\0" \
 	"bootcmd_load=if test '${fallback}' = true; then " \
@@ -177,7 +177,12 @@
 	"bootcmd_run=bootm ${kernel_addr_r}#conf@imx7d-octalarm-${boardID}.${boardRev}.dtb; " \
 		"bootm ${kernel_addr_r}#conf@imx7d-octalarm-${boardID}.dtb; " \
 		"bootm ${kernel_addr_r}#conf@imx7d-octalarm-0.dtb;\0" \
-	"bootcmd_ostree=mmc dev ${mmcdev}; mmc rescan; run bootcmd_otenv; run bootcmd_args; run bootcmd_load; run bootcmd_run\0"
+	"bootcmd_ostree=mmc dev ${mmcdev}; mmc rescan; run bootcmd_otenv; run bootcmd_splash; run bootcmd_args; run bootcmd_load; run bootcmd_run\0" \
+	"bootcmd_extract=setexpr rootdir gsub \"ostree=([^ ]*)(.*)\" \"\\\\\\\\1\" \"${bootargs}\"\0" \
+	"bootcmd_splash=run bootcmd_extract; ext4load mmc ${mmcdev}:${ostree_partition} $loadaddr ${rootdir}/usr/share/boot-splash-images/splash.bmp; bmp display ${loadaddr}\0"
+
+/* setexpr rootdir gsub "ostree=([^ ]*)(.*)" "\1" "${bootargs}" */
+
 
 /* @TODO compare checksums after read (store in mem, do compare) */
 #define TFTP_PROGRAM_EMMC_ENV \
@@ -348,7 +353,7 @@
 
 #ifdef CONFIG_VIDEO
 #define CONFIG_VIDEO_MXS
-#define CONFIG_VIDEO_LOGO
+/*#define CONFIG_VIDEO_LOGO*/
 #define CONFIG_SPLASH_SCREEN
 #define CONFIG_SPLASH_SCREEN_ALIGN
 #define CONFIG_CMD_BMP
