@@ -459,7 +459,7 @@ int checkboard(void)
 		} else {
 			boardID = buf[CONFIG_SYS_I2C_EEPROM_BOARD_ID_OFFSET];
 			if (buf[CONFIG_SYS_I2C_EEPROM_BOARD_ID_OFFSET] < NUM_SUPPORTED_VARIATIONS) {
-				name = board_variations[boardID];
+				board_name = board_variations[boardID];
 			} else {
 				printf("Warning: Unknown board variation (not known to U-Boot board support).");
 			}
