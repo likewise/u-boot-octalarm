@@ -27,11 +27,12 @@
 #include <asm/arch/crm_regs.h>
 #include <asm/imx-common/video.h>
 
-#define NUM_SUPPORTED_VARIATIONS 3
+#define NUM_SUPPORTED_VARIATIONS 4
 static const char * const board_variations[NUM_SUPPORTED_VARIATIONS] = {
 	"failsafe",						/* 0: Minimal */
 	"PBA-C-09 Plotech display",		/* 1: Development kit */
 	"ADS4500A",				/* 2: ADS4500A */
+	"ADS4500A 100MHz eMMC",			/* 3: ADS4500A, eMMC reduced to 100 MHz */
 };
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -433,6 +434,7 @@ int checkboard(void)
 	/* Failsafe board */
 	uchar boardID = 0;
 	uchar buf[4];
+	const char *board_name = "Unknown";
 
 	if (IS_ENABLED(CONFIG_ARMV7_BOOT_SEC_DEFAULT))
 		mode = "secure";
@@ -449,20 +451,24 @@ int checkboard(void)
 				CONFIG_SYS_I2C_EEPROM_ADDR);
 	} else {
 		if((buf[CONFIG_SYS_I2C_EEPROM_MAGIC_OFFSET] != CONFIG_SYS_I2C_EEPROM_MAGIC) ||
-			(buf[CONFIG_SYS_I2C_EEPROM_REVISION_OFFSET] != CONFIG_SYS_I2C_EEPROM_REVISION) ||
-			(buf[CONFIG_SYS_I2C_EEPROM_BOARD_ID_OFFSET] >= NUM_SUPPORTED_VARIATIONS))
+			(buf[CONFIG_SYS_I2C_EEPROM_REVISION_OFFSET] != CONFIG_SYS_I2C_EEPROM_REVISION))
 		{
 			printf("Error: Incompatible board variation info from I2C "
 				" EEPROM at address %02X\n",
 				CONFIG_SYS_I2C_EEPROM_ADDR);
 		} else {
 			boardID = buf[CONFIG_SYS_I2C_EEPROM_BOARD_ID_OFFSET];
+			if (buf[CONFIG_SYS_I2C_EEPROM_BOARD_ID_OFFSET] < NUM_SUPPORTED_VARIATIONS) {
+				name = board_variations[boardID];
+			} else {
+				printf("Warning: Unknown board variation (not known to U-Boot board support).");
+			}
 		}
 	}
 	setenv_hex("boardID", boardID);
 
-	printf("Board: PHYTEC phyBOARD-Zeta i.MX7%c in %s mode on %s\n",
-		is_cpu_type(MXC_CPU_MX7D) ? 'D' : 'S', mode, board_variations[boardID]);
+	printf("Board: PHYTEC i.MX7%c SoM in %s mode on %s carrier\n",
+		is_cpu_type(MXC_CPU_MX7D) ? 'D' : 'S', mode, board_name);
 
 	return 0;
 }
