@@ -12,7 +12,8 @@
 
 #include "imx7-phycore-som.dtsi"	/* Superset - includes all SOM population options */
 #include "imx7-pba-c-09.dtsi"		/* Carrier board */
+#if 0
 #include "imx7-peb-av-02.dtsi"		/* LCD adapter */
 #include "imx7-peb-eval-02.dtsi"	/* Evaluation module */
-
+#endif
 #include "imx7d-pcm-061-2110111c.dtsi"	/* SOM variant */
