@@ -31,8 +31,8 @@
 static const char * const board_variations[NUM_SUPPORTED_VARIATIONS] = {
 	"failsafe",						/* 0: Minimal */
 	"PBA-C-09 Plotech display",		/* 1: Development kit */
-	"ADS4500A",				/* 2: ADS4500A */
-	"ADS4500A 100MHz eMMC",			/* 3: ADS4500A, eMMC reduced to 100 MHz */
+	"ADS4500A 100MHz eMMC",			/* 2: ADS4500A, eMMC reduced to 100 MHz */
+	"ADS4500B 100MHz eMMC",			/* 3: ADS4500B, eMMC reduced to 100 MHz */
 };
 DECLARE_GLOBAL_DATA_PTR;
 
