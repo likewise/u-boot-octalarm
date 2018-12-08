@@ -122,7 +122,7 @@
 
 /* Implement bootcounting in the (unused) rtc to support fallback */
 #define CONFIG_BOOTCOUNT_LIMIT
-#define CONFIG_BOOTCOUNT_I2C
+#define CONFIG_BOOTCOUNT_IMX7D
 #define CONFIG_BOOTCOUNT_ALEN		1
 #define CONFIG_SYS_I2C_RTC_ADDR		0x68
 #define CONFIG_SYS_BOOTCOUNT_ADDR	0x0D
@@ -169,7 +169,7 @@
 	"boardID=0\0" \
 	"boardRev=0\0" \
 	"bootcmd_otenv=ext4load mmc ${mmcdev}:${ostree_partition} $loadaddr /boot/loader/uEnv.txt; env import -t $loadaddr $filesize\0" \
-	"bootcmd_args=setenv ostree_root ${ostree_device}${ostree_partition}; " \
+	"bootcmd_args=setenv ostree_root 'LABEL=otaroot'; " \
 		"setenv bootargs $bootargs $bootargs_fdt ostree_root=${ostree_root} root=${ostree_root} rw rootwait rootdelay=2 console=$console,$baudrate\0" \
 	"bootcmd_load=if test '${fallback}' = true; then " \
 		"ext2load mmc ${mmcdev}:${ostree_partition} $kernel_addr_r /boot${kernel_image2}; " \
@@ -199,7 +199,8 @@
 	"mmc read ${loadaddr} 2 ${blocks}; crc32 ${loadaddr} ${filesize}; fi;\0"
 
 #define M4_TEST_ENV \
-	"bootcmd_m4=mmc read 0x7f8000 780 40; dcache flush; bootaux 0x7f8000; sleep 3; reset;\0" \
+	"bootcmd_m4_test=mmc read 0x7f8000 780 40; dcache flush; bootaux 0x7f8000; sleep 3; reset;\0" \
+	"bootcmd_m4=mmc read 0x7f8000 780 40; dcache flush; bootaux 0x7f8000;\0" \
 	"update_m4=if dhcp 0x7f8000 ${serverip}:imx7/m4.bin; then mmc write 0x7f8000 780 40; fi;\0"
 
 #define CONFIG_MFG_ENV_SETTINGS \
