@@ -15,3 +15,8 @@
 &gpmi {
 	status = "disabled";
 };
+
+/* QSPI not populated */
+&qspi1 {
+	status = "disabled";
+};

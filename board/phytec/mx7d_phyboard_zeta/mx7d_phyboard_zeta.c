@@ -257,16 +257,19 @@ int board_qspi_init(void)
 #ifdef CONFIG_FSL_ESDHC
 int board_mmc_get_env_dev(int devno)
 {
+	debug("board_mmc_get_env_dev(%d)=", devno);
+	/* mmc0 = shdc2 */
 	if (devno == 2)
-		devno--;
+		devno = 0;
+	debug("%d\n", devno);
 
 	return devno;
 }
 
 int mmc_map_to_kernel_blk(int dev_no)
 {
-	if (1 == dev_no)
-		dev_no++;
+	if (0 == dev_no)
+		dev_no = 2;
 
 	return dev_no;
 }
