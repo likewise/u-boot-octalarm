@@ -173,6 +173,24 @@ static void mxs_lcd_init(GraphicDevice *panel,
 
 void lcdif_power_down(void)
 {
+/* @TODO ISSUE! 
+ * The following loops endlessly, if M4 is running pingpong rpmsg code.
+ *
+resetting ...
+lcdif_power_down, regs=0x30730000
+w1 0x9df4f580 @0x30730040
+data abort
+pc : [<9ff97e54>]      lr : [<9ff984c4>]
+reloc pc : [<8784ee54>]    lr : [<8784f4c4>]
+sp : 9df197a8  ip : 00000000     fp : 9ff4c818
+r10: 00000001  r9 : 9df46eb8     r8 : 9e0ccfc8
+r7 : 9df19ab0  r6 : 9ffa93f6     r5 : 9ffbc304  r4 : 9df19830
+r3 : 9df19abc  r2 : 9ffa93f6     r1 : 00000280  r0 : 9df19830
+Flags: Nzcv  IRQs on  FIQs on  Mode SVC_32
+Resetting CPU ...
+*/
+
+#if 0
 	struct mxs_lcdif_regs *regs = (struct mxs_lcdif_regs *)(panel.isaBase);
 	int timeout = 1000000;
 
@@ -197,6 +215,7 @@ void lcdif_power_down(void)
 		udelay(1);
 	}
 	mxs_reset_block((struct mxs_register_32 *)&regs->hw_lcdif_ctrl_reg);
+#endif
 }
 
 void *video_hw_init(void)
