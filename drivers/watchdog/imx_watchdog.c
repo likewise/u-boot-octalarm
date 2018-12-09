@@ -4,6 +4,8 @@
  * Licensed under the GPL-2 or later.
  */
 
+#define DEBUG
+
 #include <common.h>
 #include <asm/io.h>
 #include <watchdog.h>
@@ -14,7 +16,7 @@
 void hw_watchdog_reset(void)
 {
 	struct watchdog_regs *wdog = (struct watchdog_regs *)WDOG1_BASE_ADDR;
-
+	debug("hw_watchdog_reset()\n");
 	writew(0x5555, &wdog->wsr);
 	writew(0xaaaa, &wdog->wsr);
 }
@@ -23,6 +25,7 @@ void hw_watchdog_init(void)
 {
 	struct watchdog_regs *wdog = (struct watchdog_regs *)WDOG1_BASE_ADDR;
 	u16 timeout;
+	debug("hw_watchdog_init()\n");
 
 	/*
 	 * The timer watchdog can be set between
@@ -42,6 +45,7 @@ void hw_watchdog_init(void)
 void __attribute__((weak)) reset_cpu(ulong addr)
 {
 	struct watchdog_regs *wdog = (struct watchdog_regs *)WDOG1_BASE_ADDR;
+	debug("reset_cpu() through watchdog\n");
 
 	clrsetbits_le16(&wdog->wcr, WCR_WT_MSK, WCR_WDE);
 

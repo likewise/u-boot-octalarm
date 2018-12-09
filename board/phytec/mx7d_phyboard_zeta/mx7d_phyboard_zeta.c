@@ -369,6 +369,7 @@ int power_init_board(void)
 int board_late_init(void)
 {
 	struct wdog_regs *wdog = (struct wdog_regs *)WDOG1_BASE_ADDR;
+	printf("board_late_init() zeta\n");
 #ifdef CONFIG_CMD_BMODE
 	add_board_boot_modes(board_boot_modes);
 #endif
@@ -380,6 +381,9 @@ int board_late_init(void)
 	imx_iomux_v3_setup_multiple_pads(wdog_pads, ARRAY_SIZE(wdog_pads));
 	set_wdog_reset(wdog);
 
+#ifdef CONFIG_HW_WATCHDOG
+        hw_watchdog_init();
+#endif
 	return 0;
 }
 
