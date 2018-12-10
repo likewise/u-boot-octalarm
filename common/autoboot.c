@@ -270,7 +270,8 @@ static int abortboot(int bootdelay)
 	if (abort)
 		gd->flags &= ~GD_FLG_SILENT;
 #endif
-
+	if (abort)
+		bootcount_store(0);
 	return abort;
 }
 
