@@ -266,9 +266,13 @@ int arch_cpu_init(void)
 	init_aips();
 
 	init_csu();
+
+        /* if the watchdog is used, disable PDE later in watchdog_init(), so
+         * that U-Boot initialization is covered by the power down timer. */
+#if !defined(CONFIG_IMX_WATCHDOG)
 	/* Disable PDE bit of WMCR register */
 	imx_set_wdog_powerdown(false);
-
+#endif
 	imx_enet_mdio_fixup();
 
 	set_epdc_qos();
