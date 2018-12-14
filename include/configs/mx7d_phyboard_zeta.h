@@ -124,61 +124,35 @@
 #define CONFIG_SYS_I2C_EEPROM_BOARD_REV_OFFSET	0x03
 #define CONFIG_SYS_I2C_EEPROM_MAC_OFFSET		0x10
 
-/* Implement bootcounting in the (unused) rtc to support fallback */
-#define CONFIG_BOOTCOUNT_LIMIT
+/* Implement bootcounting in the i.MX7D SNVS_LPGPR0 register */
 #define CONFIG_BOOTCOUNT_IMX7D
-#define CONFIG_BOOTCOUNT_ALEN		1
-#define CONFIG_SYS_I2C_RTC_ADDR		0x68
-#define CONFIG_SYS_BOOTCOUNT_ADDR	0x0D
+#define CONFIG_BOOTCOUNT_LIMIT
 
 #define CONFIG_BOOTLIMIT_ENV \
 	"bootlimit=3\0" \
 	"altbootcmd=echo Boot failed to often... trying fallback; setenv fallback true; run bootcmd\0"
-
-#ifdef CONFIG_FSL_QSPI
-#define CONFIG_SYS_AUXCORE_BOOTDATA 0x60100000 /* Set to QSPI1 A flash at default */
-#else
-#define CONFIG_SYS_AUXCORE_BOOTDATA 0x7F8000 /* Set to TCML address */
-#endif
-
-#ifdef CONFIG_IMX_BOOTAUX
-#define UPDATE_M4_ENV \
-	"m4image=m4_qspi.bin\0" \
-	"loadm4image=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${m4image}\0" \
-	"update_m4_from_sd=" \
-		"if sf probe 0:0; then " \
-			"if run loadm4image; then " \
-				"setexpr fw_sz ${filesize} + 0xffff; " \
-				"setexpr fw_sz ${fw_sz} / 0x10000; "	\
-				"setexpr fw_sz ${fw_sz} * 0x10000; "	\
-				"sf erase 0x0 ${fw_sz}; " \
-				"sf write ${loadaddr} 0x0 ${filesize}; " \
-			"fi; " \
-		"fi\0" \
-	"m4boot=sf probe 0:0; bootaux "__stringify(CONFIG_SYS_AUXCORE_BOOTDATA)"\0"
-#else
-#define UPDATE_M4_ENV ""
-#endif
 
 #define CONFIG_SUPPORT_EMMC_BOOT		/* eMMC specific */
 #define CONFIG_SYS_MMC_IMG_LOAD_PART	1
 
 /*
  * boardID and boardRev should be overriden from boot code
+ * @TODO kernel_addr_r is becoming a bit low, the kernel is relocated to 0x80008000-...
  */
 #define CONFIG_OSTREE_ENV_SETTINGS \
-	"kernel_addr_r=0x81000000\0" \
+	"kernel_addr_r=0x81800000\0" \
 	"ostree_partition=1\0" \
 	"ostree_device=/dev/mmcblk0p\0" \
 	"boardID=0\0" \
 	"boardRev=0\0" \
+	"defargs=earlyprintk clk_ignore_unused\0" \
 	"bootcmd_otenv=ext4load mmc ${mmcdev}:${ostree_partition} $loadaddr /boot/loader/uEnv.txt; env import -t $loadaddr $filesize\0" \
 	"bootcmd_args=setenv ostree_root 'LABEL=otaroot'; " \
-		"setenv bootargs $bootargs $bootargs_fdt ostree_root=${ostree_root} root=${ostree_root} rw rootwait rootdelay=2 console=$console,$baudrate\0" \
+		"setenv bootargs $bootargs $bootargs_fdt ostree_root=${ostree_root} root=${ostree_root} rw rootwait rootdelay=2 console=$console,$baudrate $defargs\0" \
 	"bootcmd_load=if test '${fallback}' = true; then " \
-		"ext2load mmc ${mmcdev}:${ostree_partition} $kernel_addr_r /boot${kernel_image2}; " \
+		"ext4load mmc ${mmcdev}:${ostree_partition} $kernel_addr_r /boot${kernel_image2}; " \
 	"else " \
-		"ext2load mmc ${mmcdev}:${ostree_partition} $kernel_addr_r /boot${kernel_image}; " \
+		"ext4load mmc ${mmcdev}:${ostree_partition} $kernel_addr_r /boot${kernel_image}; " \
 	"fi;\0" \
 	"bootcmd_run=bootm ${kernel_addr_r}#conf@imx7d-octalarm-${boardID}.${boardRev}.dtb; " \
 		"bootm ${kernel_addr_r}#conf@imx7d-octalarm-${boardID}.dtb; " \
@@ -189,7 +163,7 @@
 
 /* setexpr rootdir gsub "ostree=([^ ]*)(.*)" "\1" "${bootargs}" */
 
-
+/* During development, reprogram U-Boot binary or complete eMMC image over TFTP */
 /* @TODO compare checksums after read (store in mem, do compare) */
 #define TFTP_PROGRAM_EMMC_ENV \
 	"serverip=192.168.2.17\0" \
@@ -202,10 +176,15 @@
 	"mmc write ${loadaddr} 2 ${blocks}; mw.b ${loadaddr} a5 ${filesize}; " \
 	"mmc read ${loadaddr} 2 ${blocks}; crc32 ${loadaddr} ${filesize}; fi;\0"
 
+/* 0x7f8000 is the TCM, 0x7ffffc is the last word of the M4 firmware where we expect 0xbabecafe
+ * 0x30370090 is the SNVS_LPGPR0 register keeping bootcount, we clear it during development.
+ * the M4 firmware should have 0xbabecafe in it's last word to be considered valid */
 #define M4_TEST_ENV \
-	"bootcmd_m4_test=mmc read 0x7f8000 780 40; dcache flush; bootaux 0x7f8000; sleep 3; reset;\0" \
-	"bootcmd_m4=mmc read 0x7f8000 780 40; dcache flush; bootaux 0x7f8000;\0" \
-	"update_m4=if dhcp 0x7f8000 ${serverip}:imx7/m4.bin; then mmc write 0x7f8000 780 40; fi;\0"
+	"bootcmd_m4=mw.l 0x7ffffc 0 1; mmc read 0x7f8000 780 40; dcache flush; " \
+           "if itest.l *0x7ffffc -eq 0xbabecafe; then bootaux 0x7f8000; else echo Invalid M4 firmware; fi;\0" \
+	"update_m4=if dhcp ${loadaddr} ${serverip}:imx7/m4.bin; then mmc write ${loadaddr} 780 40; fi;\0" \
+	"bootcmd_m4_dev=mw.l 30370090 0 1; if dhcp 0x7f8000 ${serverip}:imx7/m4.bin; then dcache flush; bootaux 0x7f8000; fi; run bootcmd_ostree;\0" \
+	"bootcmd_m4_safe=if test $bootcount -lt $bootlimit; then run bootcmd_m4; fi;\0"
 
 #define CONFIG_MFG_ENV_SETTINGS \
 	"mfgtool_args=setenv bootargs console=${console},${baudrate} " \
